@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chatbot Portfolio</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Ask Me Anything About My Work</h1>
+    <textarea id="question" placeholder="Type your question..."></textarea>
+    <button onclick="ask()">Send</button>
+    <div id="chat-history"></div>
+    <pre id="response"></pre>
+  </div>
+
+  <script>
+  // Generate a random thread ID for this session
+  const thread_id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+
+// Load existing conversation from localStorage or start empty
+let conversation = [];
+async function ask() {
+  const question = document.getElementById("question").value;
+  if (!question.trim()) return;
+
+  // Add user message locally
+  conversation.push({ role: "user", content: question });
+  renderHistory();
+
+  // Send only the latest question to backend
+  const res = await fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ thread_id, question }),
+  });
+
+  const returnedThreadId = res.headers.get("thread");
+  console.log("Returned thread ID:", returnedThreadId);
+
+  const reader = res.body.getReader();
+  let result = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    result += new TextDecoder().decode(value);
+    document.getElementById("response").textContent = result;
+  }
+
+  // Add bot reply locally
+  conversation.push({ role: "assistant", content: result });
+  renderHistory();
+}
+
+function renderHistory() {
+  const historyDiv = document.getElementById("chat-history");
+  historyDiv.innerHTML = conversation
+    .map(msg => `<div class="${msg.role}"><strong>${msg.role === "user" ? "You" : "Bot"}:</strong> ${msg.content}</div>`)
+    .join("");
+}
+
+</script>
+</body>
+</html>
