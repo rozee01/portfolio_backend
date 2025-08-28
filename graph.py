@@ -16,7 +16,7 @@ class State(MessagesState):
 
 # 1. Retrieve relevant documents
 def retrieve(state: State):
-    retrieved_docs = db.similarity_search(state["question"])
+    retrieved_docs = db.similarity_search(state["question"], k=3)
     return {"context": retrieved_docs}
 
 # 2. Generate answer with history 
